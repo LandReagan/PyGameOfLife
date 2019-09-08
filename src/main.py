@@ -116,8 +116,21 @@ class Engine:
                 if cells[index + 1].cell_state is True:
                     alive_surrounding += 1
 
-            # Do the birth / survival calculation
-            # update cell's state
+            # Do the birth / survival calculation. Standard rule:
+            # Surrounded by 2 or 3, survival OK, surrounded by 3, birth!
+            if cell.cell_state is True:
+                if alive_surrounding == 2 or alive_surrounding == 3:
+                    cell.next_state = True
+                else:
+                    cell.next_state = False
+            else:
+                if alive_surrounding == 3:
+                    cell.next_state = True
+                else:
+                    cell.next_state = False
+
+        for cell in cells:
+            cell.cell_state = cell.next_state
 
     def randomize_cells_state(self):
         for cell in self.cells:
@@ -147,7 +160,7 @@ class FullWindow(BoxLayout):
     def __init__(self, **kwargs):
         BoxLayout.__init__(self, **kwargs)
         self.orientation = 'horizontal'
-        self.engine = Engine(5, 5)
+        self.engine = Engine(50, 50)
         self.add_widget(CellsGrid(self.engine.cells, self.engine.line_length))
         self.add_widget(ControlZone(self.engine))
 
