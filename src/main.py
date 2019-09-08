@@ -78,10 +78,44 @@ class Engine:
 
     def step(self):
         print('Step!')
+        cells = self.cells
+        line_length = self.line_length
+        col_length = int(len(cells) / line_length)
+
         for cell in self.cells:
             # get cells state around and add it to get number of alive cells
-            line_number = cell.index / self.line_length
-            col_number = cell.index - line_number * self.line_length
+            index = cell.index
+            alive_surrounding = 0
+            line_number = index // line_length
+            col_number = index - line_number * line_length
+            # Upper line
+            if line_number > 0:
+                if cells[index - line_length].cell_state is True:
+                    alive_surrounding += 1
+                if col_number > 0:
+                    if cells[index - line_length - 1].cell_state is True:
+                        alive_surrounding += 1
+                if col_number < line_length - 1:
+                    if cells[index - line_length + 1].cell_state is True:
+                        alive_surrounding += 1
+            # Lower line
+            if line_number < col_length - 1:
+                if cells[index + line_length].cell_state is True:
+                    alive_surrounding += 1
+                if col_number > 0:
+                    if cells[index + line_length - 1].cell_state is True:
+                        alive_surrounding += 1
+                if col_number < line_length - 1:
+                    if cells[index + line_length + 1].cell_state is True:
+                        alive_surrounding += 1
+            # Central line
+            if col_number > 0:
+                if cells[index - 1].cell_state is True:
+                    alive_surrounding += 1
+            if col_number < line_length - 1:
+                if cells[index + 1].cell_state is True:
+                    alive_surrounding += 1
+
             # Do the birth / survival calculation
             # update cell's state
 
@@ -113,7 +147,7 @@ class FullWindow(BoxLayout):
     def __init__(self, **kwargs):
         BoxLayout.__init__(self, **kwargs)
         self.orientation = 'horizontal'
-        self.engine = Engine(20, 20)
+        self.engine = Engine(5, 5)
         self.add_widget(CellsGrid(self.engine.cells, self.engine.line_length))
         self.add_widget(ControlZone(self.engine))
 
