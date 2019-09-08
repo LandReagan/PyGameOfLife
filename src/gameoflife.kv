@@ -1,0 +1,62 @@
+<CellsGrid>:
+    grid: gridlayout
+
+    canvas.before:
+        Color:
+            rgb: .2, .2, .2
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    GridLayout:
+        id: gridlayout
+        cols: root.line_length
+        padding: 20
+        pos_hint: {'top': 1}
+
+<ControlZone>:
+    orientation: 'vertical'
+    size_hint_x: .3
+
+    Label:
+        padding: 10, 10
+        text_size: self.size
+        halign: 'center'
+        valign: 'bottom'
+        text: 'AREA:'
+    BoxLayout:
+        orientation: 'horizontal'
+        Label:
+            text_size: self.size
+            halign: 'center'
+            valign: 'top'
+            text: 'x: '
+        TextInput:
+            multiline: False
+            halign: 'center'
+            text: str(root.area_cols)
+        Label:
+            text_size: self.size
+            halign: 'center'
+            valign: 'top'
+            text: 'y: '
+        TextInput:
+            halign: 'center'
+            multiline: False
+            text: str(root.area_lines)
+    Button:
+        text: 'RESET AREA'
+        on_release: root.reset_engine()
+
+    Label:
+        padding: 10, 10
+        text_size: self.size
+        halign: 'center'
+        valign: 'bottom'
+        text: 'ENGINE:'
+    Button:
+        text: 'STEP'
+        on_release: root.engine_step()
+    Button:
+        text: 'RANDOM ALIVE CELLS'
+        on_release: root.engine_randomize_cells()
