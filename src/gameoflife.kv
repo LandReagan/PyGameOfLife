@@ -18,6 +18,9 @@
     orientation: 'vertical'
     size_hint_x: .3
 
+    text_input_cols: input_cols
+    text_input_lines: input_lines
+
     Label:
         padding: 10, 10
         text_size: self.size
@@ -32,6 +35,7 @@
             valign: 'top'
             text: 'x: '
         TextInput:
+            id: input_cols
             multiline: False
             halign: 'center'
             text: str(root.area_cols)
@@ -41,6 +45,7 @@
             valign: 'top'
             text: 'y: '
         TextInput:
+            id: input_lines
             halign: 'center'
             multiline: False
             text: str(root.area_lines)
@@ -57,6 +62,10 @@
     Button:
         text: 'STEP'
         on_release: root.engine_step()
+    Button:
+        text: 'PLAY'
+        on_press: root.engine.play()
+        on_release: root.engine.stop()
     Button:
         text: 'RANDOM ALIVE CELLS'
         on_release: root.engine_randomize_cells()
