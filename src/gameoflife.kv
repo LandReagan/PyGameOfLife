@@ -20,6 +20,7 @@
 
     text_input_cols: input_cols
     text_input_lines: input_lines
+    option_toroidal_checkbox: toroidal_checkbox
 
     Label:
         padding: 10, 10
@@ -64,8 +65,21 @@
         on_release: root.engine_step()
     Button:
         text: 'PLAY'
-        on_press: root.engine.play()
+        on_press: root.play()
         on_release: root.engine.stop()
     Button:
         text: 'RANDOM ALIVE CELLS'
         on_release: root.engine_randomize_cells()
+
+    Label:
+        padding: 10, 10
+        text_size: self.size
+        halign: 'center'
+        valign: 'bottom'
+        text: 'OPTIONS:'
+    BoxLayout:
+        orientation: 'horizontal'
+        Label:
+            text: 'Toroidal\nboundaries'
+        CheckBox:
+            id: toroidal_checkbox

@@ -29,7 +29,6 @@ class Cell(ButtonBehavior, Label):
 
     def toggle_state(self):
         self.cell_state = not self.cell_state
-        print(str(self.index) + ': ' + str(self.cell_state))
 
     def on_press(self):
         self.toggle_state()
@@ -81,9 +80,18 @@ class Engine:
     line_length = 0
     grid_ref = None
     step_event = None
+    toroidal_boundary = True
 
     def __init__(self, lines, cols):
         self.reset(lines, cols)
+
+    @property
+    def lines(self):
+        return len(self.cells) // self.line_length
+
+    @property
+    def cols(self):
+        return self.line_length
 
     def reset(self, lines, cols):
         self.cells.clear()
@@ -93,44 +101,83 @@ class Engine:
         if self.grid_ref is not None:
             self.grid_ref.rebuild()
 
-    def step(self, dt=None):
+    def step(self, dt):
+
         cells = self.cells
+        cells_number = len(cells)
         line_length = self.line_length
         col_length = int(len(cells) / line_length)
 
         for cell in self.cells:
             # get cells state around and add it to get number of alive cells
-            index = cell.index
             alive_surrounding = 0
+            index = cell.index
             line_number = index // line_length
             col_number = index - line_number * line_length
-            # Upper line
-            if line_number > 0:
-                if cells[index - line_length].cell_state is True:
-                    alive_surrounding += 1
-                if col_number > 0:
-                    if cells[index - line_length - 1].cell_state is True:
-                        alive_surrounding += 1
-                if col_number < line_length - 1:
-                    if cells[index - line_length + 1].cell_state is True:
-                        alive_surrounding += 1
-            # Lower line
-            if line_number < col_length - 1:
-                if cells[index + line_length].cell_state is True:
-                    alive_surrounding += 1
-                if col_number > 0:
-                    if cells[index + line_length - 1].cell_state is True:
-                        alive_surrounding += 1
-                if col_number < line_length - 1:
-                    if cells[index + line_length + 1].cell_state is True:
-                        alive_surrounding += 1
-            # Central line
-            if col_number > 0:
-                if cells[index - 1].cell_state is True:
-                    alive_surrounding += 1
-            if col_number < line_length - 1:
-                if cells[index + 1].cell_state is True:
-                    alive_surrounding += 1
+
+            # Get cells indexes around
+            upper_left_cell_index = index - line_length - 1
+            upper_cell_index = index - line_length
+            upper_right_cell_index = index - line_length + 1
+            right_cell_index = index + 1
+            lower_right_cell_index = index + line_length + 1
+            lower_cell_index = index + line_length
+            lower_left_cell_index = index + line_length - 1
+            left_cell_index = index - 1
+
+            # If toroidal coords is True, convert indexes, if not and out of area, set to None
+            if self.toroidal_boundary and line_number == 0:
+                upper_left_cell_index += cells_number
+                upper_cell_index += cells_number
+                upper_right_cell_index += cells_number
+            elif line_number == 0:
+                upper_left_cell_index = None
+                upper_cell_index = None
+                upper_right_cell_index = None
+
+            if self.toroidal_boundary and line_number == col_length - 1:
+                lower_left_cell_index -= cells_number
+                lower_cell_index -= cells_number
+                lower_right_cell_index -= cells_number
+            elif line_number == col_length - 1:
+                lower_left_cell_index = None
+                lower_cell_index = None
+                lower_right_cell_index = None
+
+            if self.toroidal_boundary and col_number == 0:
+                upper_left_cell_index += line_length
+                left_cell_index += line_length
+                lower_left_cell_index += line_length
+            elif col_number == 0:
+                upper_left_cell_index = None
+                left_cell_index = None
+                lower_left_cell_index = None
+
+            if self.toroidal_boundary and col_number == line_length - 1:
+                upper_right_cell_index -= line_length
+                right_cell_index -= line_length
+                lower_right_cell_index -= line_length
+            elif col_number == line_length - 1:
+                upper_right_cell_index = None
+                right_cell_index = None
+                lower_right_cell_index = None
+
+            if upper_right_cell_index is not None and cells[upper_right_cell_index].cell_state is True:
+                alive_surrounding += 1
+            if right_cell_index is not None and cells[right_cell_index].cell_state is True:
+                alive_surrounding += 1
+            if lower_right_cell_index is not None and cells[lower_right_cell_index].cell_state is True:
+                alive_surrounding += 1
+            if lower_cell_index is not None and cells[lower_cell_index].cell_state is True:
+                alive_surrounding += 1
+            if lower_left_cell_index is not None and cells[lower_left_cell_index].cell_state is True:
+                alive_surrounding += 1
+            if left_cell_index is not None and cells[left_cell_index].cell_state is True:
+                alive_surrounding += 1
+            if upper_left_cell_index is not None and cells[upper_left_cell_index].cell_state is True:
+                alive_surrounding += 1
+            if upper_cell_index is not None and cells[upper_cell_index].cell_state is True:
+                alive_surrounding += 1
 
             # Do the birth / survival calculation. Standard rule:
             # Surrounded by 2 or 3, survival OK, surrounded by 3, birth!
@@ -162,13 +209,18 @@ class Engine:
 class ControlZone(BoxLayout):
     area_cols = NumericProperty(0)
     area_lines = NumericProperty(0)
+    toroidal = BooleanProperty(False)
 
     text_input_cols = ObjectProperty(None)
     text_input_lines = ObjectProperty(None)
+    option_toroidal_checkbox = ObjectProperty(None)
 
     def __init__(self, engine, **kwargs):
         BoxLayout.__init__(self, **kwargs)
         self.engine = engine
+        self.area_cols = engine.cols
+        self.area_lines = engine.lines
+        self.option_toroidal_checkbox.bind(active=self.on_option_toroidal)
 
     def reset_engine(self):
         self.area_cols = int(self.text_input_cols.text)
@@ -176,10 +228,18 @@ class ControlZone(BoxLayout):
         self.engine.reset(self.area_lines, self.area_cols)
 
     def engine_step(self):
-        self.engine.step()
+        self.engine.toroidal_boundary = self.toroidal
+        self.engine.step(None)
+
+    def play(self):
+        self.engine.toroidal_boundary = self.toroidal
+        self.engine.play()
 
     def engine_randomize_cells(self):
         self.engine.randomize_cells_state()
+
+    def on_option_toroidal(self, widget, value):
+        self.toroidal = value
 
 
 class FullWindow(BoxLayout):
@@ -187,7 +247,7 @@ class FullWindow(BoxLayout):
     def __init__(self, **kwargs):
         BoxLayout.__init__(self, **kwargs)
         self.orientation = 'horizontal'
-        self.engine = Engine(50, 50)
+        self.engine = Engine(10, 10)
         self.add_widget(CellsGrid(self.engine))
         self.add_widget(ControlZone(self.engine))
 
